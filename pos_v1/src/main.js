@@ -1,22 +1,37 @@
-function printInventory(inputs){
+function printInventory(inputs) {
+
   var allItems = loadAllItems();
+
+  var quantitys = calculateQuantitys(inputs, allItems);
+
+  printList(quantitys, allItems);
+}
+
+function getAllPromotionBarcodeList(promotionType) {
+
   var allPromotions = loadPromotions();
-  var allPromBars;
+
+  var allPromotionBarcodeList;
   for(var i=0; i<allPromotions.length; i++){
-    if(allPromotions[i].type == 'BUY_TWO_GET_ONE_FREE'){
-      allPromBars = allPromotions[i].barcodes;
+    if(allPromotions[i].type == promotionType){
+      allPromotionBarcodeList = allPromotions[i].barcodes;
       break;
     }
   }
+
+  return allPromotionBarcodeList;
+}
+
+function calculateQuantitys(inputs, allItems) {
+
   var quantitys = [];
+
   for(var i = 0; i < inputs.length; i++){
-    var itemBarcode = inputs[i];
-    var quantity = 1;
-    if(itemBarcode.length>10){
-      var itemSpilt = itemBarcode.split('-');
-      itemBarcode = itemSpilt[0];
-      quantity = Number(itemSpilt[1]);
-    }
+
+    var itemSpilt = inputs[i].split('-');
+    var itemBarcode = itemSpilt[0];
+    var quantity = Number(itemSpilt[1]) || 1;
+
     for(var j=0; j < allItems.length; j++){
       if(itemBarcode == allItems[j].barcode){
         if(quantitys[j] == undefined)
@@ -26,20 +41,32 @@ function printInventory(inputs){
       }
     }
   }
+  return quantitys;
+}
 
+function isPromotionItem(item, quantity) {
+
+  var allPromotionBarcodeList = getAllPromotionBarcodeList('BUY_TWO_GET_ONE_FREE')
+
+  for(var j = 0; j < allPromotionBarcodeList.length; j++){
+    if(allPromotionBarcodeList[j] === item.barcode && quantity > 2){
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function printList(quantitys, allItems) {
   var commonOutput = '***<没钱赚商店>购物清单***\n';
   var presenterOutput = '----------------------\n挥泪赠送商品：\n';
   var priceSum = 0;
   var priceSave = 0;
+
   for(var i = 0; i < quantitys.length; i++){
+
     if(quantitys[i]>0){
-      var tag = 0;
-      for(var j = 0; j < allPromBars.length; j++){
-        if(allPromBars[j] == allItems[i].barcode && quantitys[i] > 2){
-          tag = 1;
-          break;
-        }
-      }
+
       var price = allItems[i].price*quantitys[i];
       var quantityReduce = Math.floor(quantitys[i] / 3);
       var priceReduce = allItems[i].price * quantityReduce;
@@ -49,7 +76,8 @@ function printInventory(inputs){
                       + quantitys[i] + allItems[i].unit + '，单价：'
                       + allItems[i].price.toFixed(2) + '(元)，小计：'
                       + (price - priceReduce).toFixed(2) + '(元)' + '\n';
-      if(tag==1){
+
+      if(isPromotionItem(allItems[i], quantitys[i])){
         presenterOutput += '名称：' + allItems[i].name + '，数量：'
                           + quantityReduce + allItems[i].unit + '\n';
       }
